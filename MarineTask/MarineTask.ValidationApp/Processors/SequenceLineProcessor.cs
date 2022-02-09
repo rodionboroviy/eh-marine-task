@@ -1,7 +1,9 @@
 ﻿using Azure.Storage.Blobs.Specialized;
+using MarineTask.Configuration;
 using MarineTask.Core.IO.Azure.CloudBlob;
 using MarineTask.ValidationApp.Extensions;
 using MarineTask.ValidationApp.Processors.Result;
+using Microsoft.Extensions.Options;
 using System.Collections.Generic;
 using System.IO;
 
@@ -12,32 +14,33 @@ namespace MarineTask.ValidationApp.Processors
         private string recordId;
         private List<string> addedBlockIds = new List<string>(0);
 
-        private readonly string blobConnectionString;
-        private readonly string blobContainer;
-
         private BlockBlobClient blockClient;
 
         private readonly ICloudBlobClientResolver cloudBlobClientResolver;
         private readonly IBlockIdConverter blockIdConverter;
 
-        public SequenceLineProcessor()
+        private readonly AppConfiguration config;
+
+        public SequenceLineProcessor(IOptions<AppConfiguration> config)
         {
             this.cloudBlobClientResolver = new CloudBlobClientResolver();
             this.blockIdConverter = new BlockIdConverter();
 
-            this.blobConnectionString = Program.Configuration["ConnectionStrings:FileStore:ConnectionString"];
-            this.blobContainer = Program.Configuration["ConnectionStrings:FileStore:Container"];
+            this.config = config.Value;
         }
 
         public void ProcessLine(string line)
         {
             if (line.IsRecordId())
             {
+                var blobConnectionString = this.config.ConnectionStrings.FileStore.ConnectionString;
+                var blobContainer = this.config.ConnectionStrings.FileStore.Container;
+
                 recordId = line.Replace("RecordID:", string.Empty).Trim();
 
-                var filePath = $"{this.blobContainer}/{recordId}.txt";
+                var filePath = $"{blobContainer}/{recordId}.txt";
 
-                this.blockClient = this.cloudBlobClientResolver.GetCloudBlockBlobClient(filePath, this.blobConnectionString);
+                this.blockClient = this.cloudBlobClientResolver.GetCloudBlockBlobClient(filePath, blobConnectionString);
             }
 
             if (line.IsSequenceLine())

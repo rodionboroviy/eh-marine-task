@@ -1,4 +1,6 @@
-﻿using MarineTask.Core.IO.Azure.CloudBlob;
+﻿using MarineTask.Configuration;
+using MarineTask.Core.IO.Azure.CloudBlob;
+using Microsoft.Extensions.Options;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -9,20 +11,26 @@ namespace MarineTask.ValidationApp.Validation.ValidationCommand
         private readonly ICloudBlobClientResolver cloudBlobClientResolver;
         private readonly IInventorySequenceGenerator inventorySequenceGenerator;
         private readonly IBlockIdConverter blockIdConverter;
+        private readonly AppConfiguration config;
 
-        public RecordValidationCommandCreator()
+        public RecordValidationCommandCreator(
+            ICloudBlobClientResolver cloudBlobClientResolver,
+            IInventorySequenceGenerator inventorySequenceGenerator,
+            IBlockIdConverter blockIdConverter,
+            IOptions<AppConfiguration> config)
         {
-            this.cloudBlobClientResolver = new CloudBlobClientResolver();
-            this.inventorySequenceGenerator = new InventorySequenceGenerator();
-            this.blockIdConverter = new BlockIdConverter();
+            this.cloudBlobClientResolver = cloudBlobClientResolver;
+            this.inventorySequenceGenerator = inventorySequenceGenerator;
+            this.blockIdConverter = blockIdConverter;
+            this.config = config.Value;
         }
 
         public RecordValidationCommand CreateCommand(RecordValidationCommandData data)
         {
             var expectedSequence = inventorySequenceGenerator.GenerateSequence(data.Inventories);
 
-            var blobConnectionString = Program.Configuration["ConnectionStrings:FileStore:ConnectionString"];
-            var blobContainer = Program.Configuration["ConnectionStrings:FileStore:Container"];
+            var blobConnectionString = this.config.ConnectionStrings.FileStore.ConnectionString;
+            var blobContainer = this.config.ConnectionStrings.FileStore.Container;
 
             var filePath = $"{blobContainer}/{data.RecordId}.txt";
 

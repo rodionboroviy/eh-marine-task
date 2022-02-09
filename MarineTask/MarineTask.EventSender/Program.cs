@@ -1,33 +1,49 @@
 ﻿using System;
 using System.IO;
-using System.Text;
 using System.Threading.Tasks;
-using Azure.Messaging.EventHubs;
-using Azure.Messaging.EventHubs.Producer;
+using MarineTask.Configuration;
+using MarineTask.Core.Extensions;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace MarineTask.EventSender
 {
     internal class Program
     {
-        // connection string to the Event Hubs namespace
-        private const string connectionString = "Endpoint=sb://marinetask.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=xrlajIeVHdrer8RYXMe3ZPqIf6Jh/akqgE9VkJDuEb0=";
-
-        // name of the event hub
-        private const string eventHubName = "IMO9648714";
-        private const string eventHubName_v1 = "IMO9648714_v1";
-
-        static EventHubProducerClient producerClient;
-
         static async Task Main()
         {
+            var serviceProvider =
+                ConfigureServices()
+                    .BuildServiceProvider();
+
             string imageDirectory = Path.Combine(Environment.CurrentDirectory, "Images/vessel.jpg");
 
             using (FileStream fsSource = new FileStream(imageDirectory, FileMode.Open, FileAccess.Read))
             {
-                UploadManager uploadManager = new UploadManager();
+                using (var scope = serviceProvider.CreateScope())
+                {
+                    var uploadManager = scope.ServiceProvider.GetService<IUploadManager>();
 
-                await uploadManager.UploadStreamAsync(fsSource, $"{Guid.NewGuid()}_vessel.jpg");
+                    await uploadManager.SendStreamInChuncks(fsSource, $"{Guid.NewGuid()}_vessel.jpg");
+                }
             }
+        }
+
+        private static IServiceCollection ConfigureServices()
+        {
+            IServiceCollection services = new ServiceCollection();
+
+            IConfiguration config = new ConfigurationBuilder()
+                    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                    .Build();
+
+            services.AddSingleton<IConfiguration>(_ => config);
+
+            services.Configure<AppConfiguration>(config);
+
+            services.AddAzureIO();
+
+            return services;
         }
     }
 }

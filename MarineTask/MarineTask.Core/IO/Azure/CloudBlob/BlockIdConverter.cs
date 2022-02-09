@@ -1,6 +1,4 @@
 ﻿using MarineTask.Core.Extensions;
-using System;
-using System.Collections.Generic;
 using System.Text;
 
 namespace MarineTask.Core.IO.Azure.CloudBlob
@@ -9,6 +7,8 @@ namespace MarineTask.Core.IO.Azure.CloudBlob
     {
         private const char blockIdCharacter = '*';
 
+        // BlockIds should be the same length for each written block
+        // Add reserved char to fill up the length for blockId
         public string GenerateBlockIdFromString(string id, int size)
         {
             var stringBuilder = new StringBuilder(id);

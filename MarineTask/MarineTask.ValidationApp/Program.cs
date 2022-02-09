@@ -1,74 +1,68 @@
-﻿using MarineTask.ValidationApp.Processors;
+﻿using MarineTask.Core.Extensions;
+using MarineTask.ValidationApp.Extensions;
+using MarineTask.ValidationApp.Processors;
+using MarineTask.ValidationApp.Processors.Result;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using System;
-using System.Collections.Generic;
 using System.IO;
+using MarineTask.Configuration;
 
 namespace MarineTask.ValidationApp
 {
     internal class Program
     {
-        public static IConfiguration Configuration;
-
         static void Main(string[] args)
         {
-            var sourceDirectory = "D:\\Test\\Records\\Source";
+            var serviceProvider =
+                ConfigureServices()
+                    .BuildServiceProvider();
 
-            Configuration = new ConfigurationBuilder()
-                .SetBasePath(Directory.GetCurrentDirectory())
-                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-                .Build();
+            var sourceDirectory = "D:\\Test\\Records\\Source";
 
             var files = Directory.GetFiles(sourceDirectory);
 
             foreach (var file in files)
             {
-                var processor = new RecordProcessor();
-
-                using (StreamReader sr = new StreamReader(file))
+                using(var scope = serviceProvider.CreateScope())
                 {
-                    while (sr.Peek() >= 0)
+                    var processor = scope.ServiceProvider.GetService<IRecordLineProcessor<RecordProcessResult>>();
+
+                    using (StreamReader sr = new StreamReader(file))
                     {
-                        var line = sr.ReadLine();
-                        processor.ProcessLine(line);
+                        while (sr.Peek() >= 0)
+                        {
+                            var line = sr.ReadLine();
+                            processor.ProcessLine(line);
+                        }
                     }
+
+                    var result = processor.GetResult();
+
+                    Console.WriteLine(result.Result.RecordUrl);
+                    Console.WriteLine($"Validated Record: {result.Result.ValidatedRecordId}");
+                    Console.WriteLine($"Missed sequences: {string.Join(", ", result.Result.MissedSequences)}");
+                    Console.WriteLine("----------------------------------------------");
                 }
-
-                var result = processor.GetResult();
-
-                Console.WriteLine(result.Result.RecordUrl);
-                Console.WriteLine($"Validated Record: {result.Result.ValidatedRecordId}");
-                Console.WriteLine($"Missed sequences: {string.Join(", ", result.Result.MissedSequences)}");
-                Console.WriteLine("----------------------------------------------");
             }
         }
 
-        //private static IServiceCollection ConfigureServices()
-        //{
-        //    IServiceCollection services = new ServiceCollection();
+        private static IServiceCollection ConfigureServices()
+        {
+            IServiceCollection services = new ServiceCollection();
 
-        //    services.AddLogging(configure => configure.AddConsole());
+            IConfiguration config = new ConfigurationBuilder()
+                    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                    .Build();
 
-        //    services.AddSingleton(
-        //        new ConfigurationBuilder()
-        //            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-        //            .Build());
+            services.AddSingleton<IConfiguration>(_ => config);
 
-        //    services.AddTransient<ServiceBusConfigurator>();
-        //    services.AddTransient<ArmProcessorFactory>();
-        //    services.AddTransient<ArmObjectSubstituter>();
-        //    services.AddTransient<ArmValueSubstituter>();
-        //    services.AddTransient<ArmTimeSpanConverter>();
-        //    services.AddTransient<ArmProcessor>();
-        //    services.AddTransient<TokenGenerator>();
-        //    services.AddTransient<QueueMapper>();
-        //    services.AddTransient<QueueProcessor>();
-        //    services.AddTransient<TopicMapper>();
-        //    services.AddTransient<SubscriptionMapper>();
-        //    services.AddTransient<RuleMapper>();
-        //    services.AddTransient<TopicProcessor>();
+            services.Configure<AppConfiguration>(config);
 
-        //    return services;
-        //}
+            services.AddRecordProcessServices();
+            services.AddAzureIO();
+
+            return services;
+        }
     }
 }

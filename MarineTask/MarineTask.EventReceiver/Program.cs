@@ -2,9 +2,14 @@
 using Azure.Messaging.EventHubs.Consumer;
 using Azure.Messaging.EventHubs.Processor;
 using Azure.Storage.Blobs;
+using MarineTask.Common;
+using MarineTask.Configuration;
+using MarineTask.Core.Extensions;
 using MarineTask.Core.IO.Abstractions;
 using MarineTask.Core.IO.Azure;
 using MarineTask.Core.IO.Azure.CloudBlob;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.IO;
 using System.Threading;
@@ -76,9 +81,9 @@ namespace MarineTask.EventReceiver
             {
                 IFileWriter fileWriter = new AzureFileManager(new CloudBlobClientResolver());
 
-                var fileName = (string)eventArgs.Data.Properties["FileName"];
-                var blockNumber = (int)eventArgs.Data.Properties["BlockNumber"];
-                var blockCount = (long)eventArgs.Data.Properties["BlockCount"];
+                var fileName = (string)eventArgs.Data.Properties[Constants.EventDataPropFileName];
+                var blockNumber = (int)eventArgs.Data.Properties[Constants.EventDataPropBlockNumber];
+                var blockCount = (long)eventArgs.Data.Properties[Constants.EventDataPropBlockCount];
 
                 var destinationPath = $"processedmarinefilesv1/{eventHubName}/{fileName}";
 
@@ -106,6 +111,23 @@ namespace MarineTask.EventReceiver
             Console.WriteLine($"\tPartition '{ eventArgs.PartitionId}': an unhandled exception was encountered. This was not expected to happen.");
             Console.WriteLine(eventArgs.Exception.Message);
             return Task.CompletedTask;
+        }
+
+        private static IServiceCollection ConfigureServices()
+        {
+            IServiceCollection services = new ServiceCollection();
+
+            IConfiguration config = new ConfigurationBuilder()
+                    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                    .Build();
+
+            services.AddSingleton<IConfiguration>(_ => config);
+
+            services.Configure<AppConfiguration>(config);
+
+            services.AddAzureIO();
+
+            return services;
         }
     }
 }

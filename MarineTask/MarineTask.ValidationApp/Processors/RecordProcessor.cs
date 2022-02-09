@@ -11,12 +11,16 @@ namespace MarineTask.ValidationApp.Processors
         private readonly IRecordValidationCommandCreator recordValidationCommandCreator;
         private readonly IRecordValidator recordValidator;
 
-        public RecordProcessor()
+        public RecordProcessor(
+            IRecordLineProcessor<SequenceResult> sequenceProcessor,
+            IRecordLineProcessor<InventoryResult> inventoryProcessor,
+            IRecordValidationCommandCreator recordValidationCommandCreator,
+            IRecordValidator recordValidator)
         {
-            this.sequenceProcessor = new SequenceLineProcessor();
-            this.inventoryProcessor = new InventoryLineProcessor();
-            this.recordValidationCommandCreator = new RecordValidationCommandCreator();
-            this.recordValidator = new RecordValidator();
+            this.sequenceProcessor = sequenceProcessor;
+            this.inventoryProcessor = inventoryProcessor;
+            this.recordValidationCommandCreator = recordValidationCommandCreator;
+            this.recordValidator = recordValidator;
         }
 
         public void ProcessLine(string line)

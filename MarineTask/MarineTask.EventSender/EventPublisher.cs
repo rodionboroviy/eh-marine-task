@@ -1,5 +1,6 @@
 ﻿using Azure.Messaging.EventHubs;
 using Azure.Messaging.EventHubs.Producer;
+using MarineTask.Common;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -35,9 +36,9 @@ namespace MarineTask.EventSender
             foreach (PublishDetails publishDetails in details)
             {
                 var eventData = new EventData(BinaryData.FromBytes(publishDetails.Data));
-                eventData.Properties.Add(nameof(PublishDetails.FileName), publishDetails.FileName);
-                eventData.Properties.Add(nameof(PublishDetails.BlockNumber), publishDetails.BlockNumber);
-                eventData.Properties.Add(nameof(PublishDetails.BlockCount), publishDetails.BlockCount);
+                eventData.Properties.Add(Constants.EventDataPropFileName, publishDetails.FileName);
+                eventData.Properties.Add(Constants.EventDataPropBlockNumber, publishDetails.BlockNumber);
+                eventData.Properties.Add(Constants.EventDataPropBlockCount, publishDetails.BlockCount);
 
                 if (!eventBatch.TryAdd(eventData))
                 {
