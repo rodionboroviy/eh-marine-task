@@ -1,7 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using MarineTask.EventSender.Producer;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace MarineTask.EventSender.Extensions
 {
@@ -10,6 +8,7 @@ namespace MarineTask.EventSender.Extensions
         public static IServiceCollection AddSendServices(this IServiceCollection services)
         {
             services.AddScoped<IUploadManager, UploadManager>();
+            services.AddScoped<IEventProducer, EventProducer>();
 
             return services;
         }

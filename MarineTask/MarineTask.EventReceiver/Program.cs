@@ -1,56 +1,31 @@
-﻿using Azure.Messaging.EventHubs;
-using Azure.Messaging.EventHubs.Consumer;
-using Azure.Messaging.EventHubs.Processor;
-using Azure.Storage.Blobs;
-using MarineTask.Common;
-using MarineTask.Configuration;
+﻿using MarineTask.Configuration.Extensions;
 using MarineTask.Core.Extensions;
-using MarineTask.Core.IO.Abstractions;
-using MarineTask.Core.IO.Azure;
-using MarineTask.Core.IO.Azure.CloudBlob;
+using MarineTask.EventReceiver.Extensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System;
-using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using MarineTask.EventReceiver.Consumer;
 
 namespace MarineTask.EventReceiver
 {
     internal class Program
     {
-        private const string ehubNamespaceConnectionString = "Endpoint=sb://marinetask.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=xrlajIeVHdrer8RYXMe3ZPqIf6Jh/akqgE9VkJDuEb0=";
-        private const string eventHubName = "IMO9648714_v1";
-
-        private const string blobStorageConnectionString = "DefaultEndpointsProtocol=https;AccountName=stgmarinetask;AccountKey=IpmNwSBrsAC4XfrYlYtlC45SOL496/0zFE5SYfRbxbfhr/ZabKEYU35QWIi68BEsX6KCfEOaNE131HsM1l0EKg==;EndpointSuffix=core.windows.net";
-        private const string blobContainerName = "marineconsumerv1";
-
-        static BlobContainerClient storageClient;
-
-        // The Event Hubs client types are safe to cache and use as a singleton for the lifetime
-        // of the application, which is best practice when events are being published or read regularly.        
-        static EventProcessorClient processor;
-
         static async Task Main()
         {
+            var serviceProvider =
+                ConfigureServices()
+                    .BuildServiceProvider();
+
             var cancellationSource = new CancellationTokenSource();
+
             cancellationSource.CancelAfter(TimeSpan.FromSeconds(45));
 
-            // Read from the default consumer group: $Default
-            string consumerGroup = EventHubConsumerClient.DefaultConsumerGroupName;
-
-            // Create a blob container client that the event processor will use 
-            storageClient = new BlobContainerClient(blobStorageConnectionString, blobContainerName);
-
-            // Create an event processor client to process events in the event hub
-            processor = new EventProcessorClient(storageClient, consumerGroup, ehubNamespaceConnectionString, eventHubName);
-
-            // Register handlers for processing events and handling errors
-            processor.ProcessEventAsync += ProcessEventHandler;
-            processor.ProcessErrorAsync += ProcessErrorHandler;
+            var consumer = serviceProvider.GetService<IEventConsumer>();
 
             // Start the processing
-            await processor.StartProcessingAsync();
+            await consumer.Start();
 
             try
             {
@@ -63,68 +38,16 @@ namespace MarineTask.EventReceiver
                 // This is expected when the delay is canceled.
             }
 
-            try
-            {
-                await processor.StopProcessingAsync();
-            }
-            finally
-            {
-                // To prevent leaks, the handlers should be removed when processing is complete.
-                processor.ProcessEventAsync -= ProcessEventHandler;
-                processor.ProcessErrorAsync -= ProcessErrorHandler;
-            }
-        }
-
-        static async Task ProcessEventHandler(ProcessEventArgs eventArgs)
-        {
-            try
-            {
-                IFileWriter fileWriter = new AzureFileManager(new CloudBlobClientResolver());
-
-                var fileName = (string)eventArgs.Data.Properties[Constants.EventDataPropFileName];
-                var blockNumber = (int)eventArgs.Data.Properties[Constants.EventDataPropBlockNumber];
-                var blockCount = (long)eventArgs.Data.Properties[Constants.EventDataPropBlockCount];
-
-                var destinationPath = $"processedmarinefilesv1/{eventHubName}/{fileName}";
-
-                // Write the body of the event to the blob
-                var url = await fileWriter.WriteFile(
-                    new MemoryStream(eventArgs.Data.Body.ToArray(), true),
-                    destinationPath,
-                    blockNumber,
-                    blockCount);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-            }
-            finally
-            {
-                // Update checkpoint in the blob storage so that the app receives only new events the next time it's run
-                await eventArgs.UpdateCheckpointAsync(eventArgs.CancellationToken);
-            }
-        }
-
-        static Task ProcessErrorHandler(ProcessErrorEventArgs eventArgs)
-        {
-            // Write details about the error to the console window
-            Console.WriteLine($"\tPartition '{ eventArgs.PartitionId}': an unhandled exception was encountered. This was not expected to happen.");
-            Console.WriteLine(eventArgs.Exception.Message);
-            return Task.CompletedTask;
+            // Stop the processing
+            await consumer.Stop();
         }
 
         private static IServiceCollection ConfigureServices()
         {
             IServiceCollection services = new ServiceCollection();
 
-            IConfiguration config = new ConfigurationBuilder()
-                    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-                    .Build();
-
-            services.AddSingleton<IConfiguration>(_ => config);
-
-            services.Configure<AppConfiguration>(config);
-
+            services.AddConfiguration();
+            services.AddConsumeServices();
             services.AddAzureIO();
 
             return services;

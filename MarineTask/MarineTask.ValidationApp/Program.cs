@@ -7,6 +7,7 @@ using Microsoft.Extensions.Configuration;
 using System;
 using System.IO;
 using MarineTask.Configuration;
+using MarineTask.Configuration.Extensions;
 
 namespace MarineTask.ValidationApp
 {
@@ -51,14 +52,7 @@ namespace MarineTask.ValidationApp
         {
             IServiceCollection services = new ServiceCollection();
 
-            IConfiguration config = new ConfigurationBuilder()
-                    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-                    .Build();
-
-            services.AddSingleton<IConfiguration>(_ => config);
-
-            services.Configure<AppConfiguration>(config);
-
+            services.AddConfiguration();
             services.AddRecordProcessServices();
             services.AddAzureIO();
 

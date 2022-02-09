@@ -1,11 +1,10 @@
-﻿using System.Collections.Generic;
-using System.IO;
+﻿using System.IO;
 using System.Threading.Tasks;
 
 namespace MarineTask.Core.IO.Abstractions
 {
     public interface IFileWriter
     {
-        Task<string> WriteFile(Stream contentToWrite, string path, int blockNumber, long blockCount);
+        Task<string> WriteFile(Stream contentToWrite, string path, int blockNumber, int blockCount);
     }
 }

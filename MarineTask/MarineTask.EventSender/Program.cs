@@ -2,7 +2,9 @@
 using System.IO;
 using System.Threading.Tasks;
 using MarineTask.Configuration;
+using MarineTask.Configuration.Extensions;
 using MarineTask.Core.Extensions;
+using MarineTask.EventSender.Extensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -18,9 +20,9 @@ namespace MarineTask.EventSender
 
             string imageDirectory = Path.Combine(Environment.CurrentDirectory, "Images/vessel.jpg");
 
-            using (FileStream fsSource = new FileStream(imageDirectory, FileMode.Open, FileAccess.Read))
+            await using (var scope = serviceProvider.CreateAsyncScope())
             {
-                using (var scope = serviceProvider.CreateScope())
+                using (FileStream fsSource = new FileStream(imageDirectory, FileMode.Open, FileAccess.Read))
                 {
                     var uploadManager = scope.ServiceProvider.GetService<IUploadManager>();
 
@@ -33,14 +35,8 @@ namespace MarineTask.EventSender
         {
             IServiceCollection services = new ServiceCollection();
 
-            IConfiguration config = new ConfigurationBuilder()
-                    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-                    .Build();
-
-            services.AddSingleton<IConfiguration>(_ => config);
-
-            services.Configure<AppConfiguration>(config);
-
+            services.AddConfiguration();
+            services.AddSendServices();
             services.AddAzureIO();
 
             return services;

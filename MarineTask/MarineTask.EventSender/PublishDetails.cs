@@ -6,7 +6,7 @@
 
         public int BlockNumber { get; set; }
 
-        public long BlockCount { get; set; }
+        public int BlockCount { get; set; }
 
         public byte[] Data { get; set; }
     }

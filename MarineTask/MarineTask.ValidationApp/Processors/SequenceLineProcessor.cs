@@ -1,5 +1,6 @@
 ﻿using Azure.Storage.Blobs.Specialized;
 using MarineTask.Configuration;
+using MarineTask.Core.IO.Abstractions;
 using MarineTask.Core.IO.Azure.CloudBlob;
 using MarineTask.ValidationApp.Extensions;
 using MarineTask.ValidationApp.Processors.Result;
@@ -18,15 +19,21 @@ namespace MarineTask.ValidationApp.Processors
 
         private readonly ICloudBlobClientResolver cloudBlobClientResolver;
         private readonly IBlockIdConverter blockIdConverter;
+        private readonly IFilePathProvider filePathProvider;
 
         private readonly AppConfiguration config;
 
-        public SequenceLineProcessor(IOptions<AppConfiguration> config)
+        public SequenceLineProcessor(
+            IOptions<AppConfiguration> config,
+            ICloudBlobClientResolver cloudBlobClientResolver,
+            IBlockIdConverter blockIdConverter,
+            IFilePathProvider filePathProvider)
         {
-            this.cloudBlobClientResolver = new CloudBlobClientResolver();
-            this.blockIdConverter = new BlockIdConverter();
-
             this.config = config.Value;
+
+            this.cloudBlobClientResolver = cloudBlobClientResolver;
+            this.blockIdConverter = blockIdConverter;
+            this.filePathProvider = filePathProvider;
         }
 
         public void ProcessLine(string line)
@@ -34,15 +41,16 @@ namespace MarineTask.ValidationApp.Processors
             if (line.IsRecordId())
             {
                 var blobConnectionString = this.config.ConnectionStrings.FileStore.ConnectionString;
-                var blobContainer = this.config.ConnectionStrings.FileStore.Container;
 
                 recordId = line.Replace("RecordID:", string.Empty).Trim();
 
-                var filePath = $"{blobContainer}/{recordId}.txt";
+                var filePath = this.filePathProvider.GetRecordFilePath($"{recordId}.txt");
 
                 this.blockClient = this.cloudBlobClientResolver.GetCloudBlockBlobClient(filePath, blobConnectionString);
             }
 
+            // Considering that message format is known
+            // by the time we start process sequence line we should know the recordId
             if (line.IsSequenceLine())
             {
                 var blockId = this.blockIdConverter.GenerateBlockIdFromString(line, 25);

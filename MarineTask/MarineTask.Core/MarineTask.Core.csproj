@@ -8,6 +8,11 @@
     <PackageReference Include="Apache.Avro" Version="1.11.0" />
     <PackageReference Include="Azure.Storage.Blobs" Version="12.10.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="6.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="6.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MarineTask.Configuration\MarineTask.Configuration.csproj" />
   </ItemGroup>
 
 </Project>
