@@ -1,0 +1,21 @@
+[Bb]in
+[Dd]ebug*/
+obj/
+.vs/
+
+*.log
+*.suo
+*.user
+*.userprefs
+*.vspscc
+*.vssscc
+
+# compressed archives
+*.rar
+*.zip
+
+# azure functions settings file
+local.settings.json
+
+# local dotnet core settings file
+appsettings.Local.json
