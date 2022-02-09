@@ -1,6 +1,7 @@
 ﻿using MarineTask.ValidationApp.Processors.Result;
 using MarineTask.ValidationApp.Validation;
-using MarineTask.ValidationApp.Validation.ValidationCommand;
+using MarineTask.ValidationApp.Validation.ValidationContext;
+using System.Threading.Tasks;
 
 namespace MarineTask.ValidationApp.Processors
 {
@@ -8,13 +9,13 @@ namespace MarineTask.ValidationApp.Processors
     {
         private readonly IRecordLineProcessor<SequenceResult> sequenceProcessor;
         private readonly IRecordLineProcessor<InventoryResult> inventoryProcessor;
-        private readonly IRecordValidationCommandCreator recordValidationCommandCreator;
+        private readonly IRecordValidationContextCreator recordValidationCommandCreator;
         private readonly IRecordValidator recordValidator;
 
         public RecordProcessor(
             IRecordLineProcessor<SequenceResult> sequenceProcessor,
             IRecordLineProcessor<InventoryResult> inventoryProcessor,
-            IRecordValidationCommandCreator recordValidationCommandCreator,
+            IRecordValidationContextCreator recordValidationCommandCreator,
             IRecordValidator recordValidator)
         {
             this.sequenceProcessor = sequenceProcessor;
@@ -23,19 +24,19 @@ namespace MarineTask.ValidationApp.Processors
             this.recordValidator = recordValidator;
         }
 
-        public void ProcessLine(string line)
+        public async Task ProcessLine(string line)
         {
-            this.sequenceProcessor.ProcessLine(line);
-            this.inventoryProcessor.ProcessLine(line);
+            await this.sequenceProcessor.ProcessLine(line);
+            await this.inventoryProcessor.ProcessLine(line);
         }
 
-        public ProcessResult<RecordProcessResult> GetResult()
+        public async Task<ProcessResult<RecordProcessResult>> GetResult()
         {
-            var recordSequenceResult = this.sequenceProcessor.GetResult();
-            var inventoryResult = this.inventoryProcessor.GetResult();
+            var recordSequenceResult = await this.sequenceProcessor.GetResult();
+            var inventoryResult = await this.inventoryProcessor.GetResult();
 
-            var validationCommand = this.recordValidationCommandCreator.CreateCommand(
-                new RecordValidationCommandData
+            var validationCommand = await this.recordValidationCommandCreator.CreateCommand(
+                new RecordValidationContextData
                 {
                     RecordId = inventoryResult.Result.InventoryId,
                     Inventories = inventoryResult.Result.Inventories,

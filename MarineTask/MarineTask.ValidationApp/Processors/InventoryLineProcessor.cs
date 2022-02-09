@@ -1,6 +1,7 @@
 ﻿using MarineTask.ValidationApp.Extensions;
 using MarineTask.ValidationApp.Processors.Result;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace MarineTask.ValidationApp.Processors
 {
@@ -14,7 +15,7 @@ namespace MarineTask.ValidationApp.Processors
             this.inventory = new List<string>();
         }
 
-        public void ProcessLine(string line)
+        public Task ProcessLine(string line)
         {
             if (line.IsInventoryId())
             {
@@ -25,18 +26,20 @@ namespace MarineTask.ValidationApp.Processors
             {
                 this.inventory.Add(line);
             }
+
+            return Task.CompletedTask;
         }
 
-        public ProcessResult<InventoryResult> GetResult()
+        public Task<ProcessResult<InventoryResult>> GetResult()
         {
-            return new ProcessResult<InventoryResult>
+            return Task.FromResult(new ProcessResult<InventoryResult>
             {
                 Result = new InventoryResult
                 {
                     InventoryId = this.inventoryRecord,
                     Inventories = this.inventory
                 }
-            };
+            });
         }
     }
 }

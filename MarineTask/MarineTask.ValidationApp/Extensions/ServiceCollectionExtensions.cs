@@ -1,7 +1,7 @@
 ﻿using MarineTask.ValidationApp.Processors;
 using MarineTask.ValidationApp.Processors.Result;
 using MarineTask.ValidationApp.Validation;
-using MarineTask.ValidationApp.Validation.ValidationCommand;
+using MarineTask.ValidationApp.Validation.ValidationContext;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace MarineTask.ValidationApp.Extensions
@@ -16,7 +16,7 @@ namespace MarineTask.ValidationApp.Extensions
 
             services.AddTransient<IRecordValidator, RecordValidator>();
             services.AddTransient<IInventorySequenceGenerator, InventorySequenceGenerator>();
-            services.AddTransient<IRecordValidationCommandCreator, RecordValidationCommandCreator>();
+            services.AddTransient<IRecordValidationContextCreator, RecordValidationContextCreator>();
 
             return services;
         }

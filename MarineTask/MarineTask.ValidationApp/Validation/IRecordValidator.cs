@@ -1,9 +1,9 @@
-﻿using MarineTask.ValidationApp.Validation.ValidationCommand;
+﻿using MarineTask.ValidationApp.Validation.ValidationContext;
 
 namespace MarineTask.ValidationApp.Validation
 {
     public interface IRecordValidator
     {
-        ValidationResult Validate(RecordValidationCommand command);
+        ValidationResult Validate(RecordValidationContext command);
     }
 }

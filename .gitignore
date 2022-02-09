@@ -14,8 +14,5 @@ obj/
 *.rar
 *.zip
 
-# azure functions settings file
-local.settings.json
-
 # local dotnet core settings file
-appsettings.Local.json
+appsettings.json

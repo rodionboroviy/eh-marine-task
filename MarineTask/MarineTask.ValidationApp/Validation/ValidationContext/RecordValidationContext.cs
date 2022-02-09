@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
 
-namespace MarineTask.ValidationApp.Validation.ValidationCommand
+namespace MarineTask.ValidationApp.Validation.ValidationContext
 {
-    public class RecordValidationCommand
+    public class RecordValidationContext
     {
         public string RecordId { get; set; }
 

@@ -6,14 +6,14 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.IO;
-using MarineTask.Configuration;
 using MarineTask.Configuration.Extensions;
+using System.Threading.Tasks;
 
 namespace MarineTask.ValidationApp
 {
     internal class Program
     {
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
             var serviceProvider =
                 ConfigureServices()
@@ -34,11 +34,11 @@ namespace MarineTask.ValidationApp
                         while (sr.Peek() >= 0)
                         {
                             var line = sr.ReadLine();
-                            processor.ProcessLine(line);
+                            await processor.ProcessLine(line);
                         }
                     }
 
-                    var result = processor.GetResult();
+                    var result = await processor.GetResult();
 
                     Console.WriteLine(result.Result.RecordUrl);
                     Console.WriteLine($"Validated Record: {result.Result.ValidatedRecordId}");

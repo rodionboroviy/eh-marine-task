@@ -7,6 +7,7 @@ using MarineTask.ValidationApp.Processors.Result;
 using Microsoft.Extensions.Options;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace MarineTask.ValidationApp.Processors
 {
@@ -36,7 +37,7 @@ namespace MarineTask.ValidationApp.Processors
             this.filePathProvider = filePathProvider;
         }
 
-        public void ProcessLine(string line)
+        public async Task ProcessLine(string line)
         {
             if (line.IsRecordId())
             {
@@ -64,15 +65,15 @@ namespace MarineTask.ValidationApp.Processors
                         sw.Flush();
                         stream.Seek(0, SeekOrigin.Begin);
 
-                        this.blockClient.StageBlock(blockId, stream);
+                        await this.blockClient.StageBlockAsync(blockId, stream);
                     }
                 }
             }
         }
 
-        public ProcessResult<SequenceResult> GetResult()
+        public async Task<ProcessResult<SequenceResult>> GetResult()
         {
-            this.blockClient.CommitBlockList(addedBlockIds);
+            await this.blockClient.CommitBlockListAsync(addedBlockIds);
 
             return new ProcessResult<SequenceResult>
             {

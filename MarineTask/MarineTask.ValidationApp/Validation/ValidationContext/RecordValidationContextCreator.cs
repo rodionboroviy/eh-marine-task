@@ -4,10 +4,11 @@ using MarineTask.Core.IO.Azure.CloudBlob;
 using Microsoft.Extensions.Options;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
-namespace MarineTask.ValidationApp.Validation.ValidationCommand
+namespace MarineTask.ValidationApp.Validation.ValidationContext
 {
-    internal class RecordValidationCommandCreator : IRecordValidationCommandCreator
+    internal class RecordValidationContextCreator : IRecordValidationContextCreator
     {
         private readonly ICloudBlobClientResolver cloudBlobClientResolver;
         private readonly IInventorySequenceGenerator inventorySequenceGenerator;
@@ -15,7 +16,7 @@ namespace MarineTask.ValidationApp.Validation.ValidationCommand
         private readonly IFilePathProvider filePathProvider;
         private readonly AppConfiguration config;
 
-        public RecordValidationCommandCreator(
+        public RecordValidationContextCreator(
             ICloudBlobClientResolver cloudBlobClientResolver,
             IInventorySequenceGenerator inventorySequenceGenerator,
             IBlockIdConverter blockIdConverter,
@@ -29,24 +30,30 @@ namespace MarineTask.ValidationApp.Validation.ValidationCommand
             this.config = config.Value;
         }
 
-        public RecordValidationCommand CreateCommand(RecordValidationCommandData data)
+        public async Task<RecordValidationContext> CreateCommand(RecordValidationContextData data)
         {
-            var expectedSequence = inventorySequenceGenerator.GenerateSequence(data.Inventories);
-
+            var filePath = this.filePathProvider.GetRecordFilePath($"{data.RecordId}.txt");
             var blobConnectionString = this.config.ConnectionStrings.FileStore.ConnectionString;
             var blobContainer = this.config.ConnectionStrings.FileStore.Container;
 
-            var filePath = this.filePathProvider.GetRecordFilePath($"{data.RecordId}.txt");
+            var expectedSequence = inventorySequenceGenerator.GenerateSequence(data.Inventories);
 
             var blockClient = this.cloudBlobClientResolver.GetCloudBlockBlobClient(filePath, blobConnectionString);
 
-            // Get committed blocks from block blob
-            var actualSequence = blockClient.Exists() ?
-                blockClient.GetBlockList().Value.CommittedBlocks
-                    .Select(_ => this.blockIdConverter.GetStringFromBlockId(_.Name, 25)).ToList()
-                : new List<string>(0);
+            var actualSequence = new List<string>(0);
+            var blockBlobExist = await blockClient.ExistsAsync();
 
-            return new RecordValidationCommand 
+            // Get committed blocks from block blob
+            if (blockBlobExist)
+            {
+                var blockList = await blockClient.GetBlockListAsync();
+
+                actualSequence = blockList.Value.CommittedBlocks
+                    .Select(_ => this.blockIdConverter.GetStringFromBlockId(_.Name, 25))
+                    .ToList();
+            }
+
+            return new RecordValidationContext 
             {
                 RecordId = data.RecordId,
                 ExpectedSequence = expectedSequence,

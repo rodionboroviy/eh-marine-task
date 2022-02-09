@@ -1,12 +1,13 @@
 ﻿using MarineTask.ValidationApp.Processors.Result;
+using System.Threading.Tasks;
 
 namespace MarineTask.ValidationApp.Processors
 {
     internal interface IRecordLineProcessor<TResult>
         where TResult : class
     {
-        void ProcessLine(string line);
+        Task ProcessLine(string line);
 
-        ProcessResult<TResult> GetResult();
+        Task<ProcessResult<TResult>> GetResult();
     }
 }
