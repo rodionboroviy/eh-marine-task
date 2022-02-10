@@ -14,9 +14,9 @@ namespace MarineTask.ValidationApp.Extensions
             services.AddScoped<IRecordLineProcessor<SequenceResult>, SequenceLineProcessor>();
             services.AddScoped<IRecordLineProcessor<RecordProcessResult>, RecordProcessor>();
 
-            services.AddTransient<IRecordValidator, RecordValidator>();
-            services.AddTransient<IInventorySequenceGenerator, InventorySequenceGenerator>();
-            services.AddTransient<IRecordValidationContextCreator, RecordValidationContextCreator>();
+            services.AddScoped<IRecordValidator, RecordValidator>();
+            services.AddScoped<IInventorySequenceGenerator, InventorySequenceGenerator>();
+            services.AddScoped<IRecordValidationContextCreator, RecordValidationContextCreator>();
 
             return services;
         }
